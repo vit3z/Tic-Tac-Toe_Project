@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void ClickSquare(Square other)
+    /*public void ClickSquareTwoPlayerMode(Square other)
 	{
         if (gameOver)
         {  
@@ -65,7 +65,30 @@ public class GameManager : MonoBehaviour
         {
             PlacePiece(OPiece, other);
         }
-	}
+	}*/
+
+    public void ClickSquare(Square other)
+    {
+        if (gameOver)
+        {  
+           // yield break;
+            return;
+        }
+
+        PlacePiece(XPiece, other);
+
+        if (!gameOver)
+        {
+           // StartCoroutine(ComputerWaitUntilTakingTurn());
+           // yield return new WaitForSeconds(2);
+            Invoke("ComputerTakeATurn", 3);
+        }
+    }
+
+    /*IEnumerator ComputerWaitUntilTakingTurn()
+    {
+        yield return new WaitForSeconds(3);
+    }*/
 	
     void PlacePiece(GameObject piece, Square other)
     {
@@ -141,6 +164,23 @@ public class GameManager : MonoBehaviour
 
         yield return new WaitForSeconds(3);
         SceneManager.LoadScene(0);
+    }
+
+    void ComputerTakeATurn()
+    {
+        Square theSquare;
+        List<Square> aEmptySquares = new List<Square>();
+
+        for (int i = 0; i < aSquares.Length; i++)
+        {
+            theSquare = aSquares[i];
+            if (theSquare.player == 0)
+            {
+                aEmptySquares.Add(theSquare);
+            }
+        }
+        theSquare = aEmptySquares[Random.Range(0, aEmptySquares.Count)];
+        PlacePiece(OPiece, theSquare);
     }
 
 	// Update is called once per frame

@@ -260,19 +260,20 @@ public class GameManager : MonoBehaviour
 
     Square WinOrBlock()                         //method to either make the AI block the win of the player, or secure the victory for itself
     {
-        /*List<Square>*/ aWinOportunities = new List<Square>();
-        /*List<Square>*/List<Square> aBlockOportunities = new List<Square>();
+        List<Square> aWinOportunities = new List<Square>();
+        List<Square> aBlockOportunities = new List<Square>();
 
-        CheckForTwo(new Vector2[]{new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 2)});
-        CheckForTwo(new Vector2[]{new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, 2)});
-        CheckForTwo(new Vector2[]{new Vector2(2, 0), new Vector2(2, 1), new Vector2(2, 2)});
+        print("Win Or Block has been run");
+        CheckForTwo(new Vector2 []{new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 2)});
+        CheckForTwo(new Vector2 []{new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, 2)});
+        CheckForTwo(new Vector2 []{new Vector2(2, 0), new Vector2(2, 1), new Vector2(2, 2)});
 
-        CheckForTwo(new Vector2[]{new Vector2(0, 0), new Vector2(1, 0), new Vector2(2, 0)});
-        CheckForTwo(new Vector2[]{new Vector2(0, 1), new Vector2(1, 1), new Vector2(2, 1)});
-        CheckForTwo(new Vector2[]{new Vector2(0, 2), new Vector2(1, 2), new Vector2(2, 2)});
+        CheckForTwo(new Vector2 []{new Vector2(0, 0), new Vector2(1, 0), new Vector2(2, 0)});
+        CheckForTwo(new Vector2 []{new Vector2(0, 1), new Vector2(1, 1), new Vector2(2, 1)});
+        CheckForTwo(new Vector2 []{new Vector2(0, 2), new Vector2(1, 2), new Vector2(2, 2)});
 
-        CheckForTwo(new Vector2[]{new Vector2(0, 0), new Vector2(1, 1), new Vector2(2, 2)});
-        CheckForTwo(new Vector2[]{new Vector2(0, 2), new Vector2(1, 1), new Vector2(2, 0)});
+        CheckForTwo(new Vector2 []{new Vector2(0, 0), new Vector2(1, 1), new Vector2(2, 2)});
+        CheckForTwo(new Vector2 []{new Vector2(0, 2), new Vector2(1, 1), new Vector2(2, 0)});
 
         if (aWinOportunities.Count > 0)
         {

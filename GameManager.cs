@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
     private bool gameOver = false;                                  //on true indicates the current match being over
     private int moves = 0;                                          //counts how many turns have been taken
     private IEnumerator coroutine;
+    private float rng = 0;
 
 	// Use this for initialization
 	void Start () 
@@ -133,8 +134,13 @@ public class GameManager : MonoBehaviour
     void ComputerTakeATurn()        //method by which the AI picks it's "strategy"
     {
         Square theSquare;
+        theSquare = NullifyTheSquare();
 
-        theSquare = WinOrBlock();
+        rng = Random.value;
+        if (rng > 0.5f)
+        {
+            theSquare = WinOrBlock();
+        }
 
         /*if (theSquare == null)
         {
@@ -148,29 +154,41 @@ public class GameManager : MonoBehaviour
         {
             theSquare = PreventTrap();
         }*/
-
-        if (theSquare == null)
+        rng = Random.value;
+        if (theSquare == null && rng > 0.5f)
         {
             theSquare = CreateOrPreventTrap();
         }
-        if (theSquare == null)
+
+        rng = Random.value;
+        if (theSquare == null && rng > 0.5f)
         {
             theSquare = GetCentre();
         }
-        if (theSquare == null)
+
+        rng = Random.value;
+        if (theSquare == null && rng > 0.5f)
         {
             theSquare = GetEmptyCorner();
         }
-        if (theSquare == null)
+
+        rng = Random.value;
+        if (theSquare == null && rng > 0.5f)
         {
             theSquare = GetEmptySide();
         }
+
         if (theSquare == null)
         {
             theSquare = GetRandomEmptySquare();
         }
 
         PlacePiece(OPiece, theSquare);
+    }
+
+    Square NullifyTheSquare()
+    {
+        return null;
     }
 
     Square GetRandomEmptySquare()       //method for the AI to choose any random space in the grid
@@ -260,10 +278,9 @@ public class GameManager : MonoBehaviour
 
     Square WinOrBlock()                         //method to either make the AI block the win of the player, or secure the victory for itself
     {
-        List<Square> aWinOportunities = new List<Square>();
-        List<Square> aBlockOportunities = new List<Square>();
+        aWinOportunities = new List<Square>();
+        aBlockOportunities = new List<Square>();
 
-        print("Win Or Block has been run");
         CheckForTwo(new Vector2 []{new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, 2)});
         CheckForTwo(new Vector2 []{new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, 2)});
         CheckForTwo(new Vector2 []{new Vector2(2, 0), new Vector2(2, 1), new Vector2(2, 2)});

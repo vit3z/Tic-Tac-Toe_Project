@@ -44,7 +44,7 @@ public class GameManager : MonoBehaviour
         }
 	}
 
-    /*public void ClickSquareTwoPlayerMode(Square other)
+    /*public void ClickSquareTwoPlayerMode(Square other) // this is used if the game is for 2 players
 	{
         if (gameOver)
         {  
@@ -63,34 +63,19 @@ public class GameManager : MonoBehaviour
     public void ClickSquare(Square other)
     {
         if (gameOver)
-        {  
-           // yield break;
+        {
             return;
         }
 
         if (currPlayer == 1)
         {
             PlacePiece(XPiece, other);
-        }
 
-        //coroutine = WaitForSeconds(3.0f);
-        StartCoroutine(ComputerWaitUntilTakingTurn());
-        //ComputerTakeATurn();
-        //Invoke("ComputerTakeATurn", 3);
-
-        //else
-        //{
-           // StartCoroutine(ComputerWaitUntilTakingTurn());
-           // yield return new WaitForSeconds(2);
-            /*if (currPlayer == 1)
+            if (moves <= 8 && currPlayer != 1 && gameOver == false)
             {
-                PlacePiece(XPiece, other);
+                StartCoroutine(ComputerWaitUntilTakingTurn());
             }
-            else if (currPlayer == 2)
-            {
-                Invoke("ComputerTakeATurn", 3);
-            }*/
-        //}
+        }
     }
 
     IEnumerator ComputerWaitUntilTakingTurn()
@@ -195,6 +180,7 @@ public class GameManager : MonoBehaviour
     {
         Square theSquare;
         List<Square> aEmptySquares = new List<Square>();
+        //aEmptySquares.Add(aSquares[0]);
 
         for (int i = 0; i < aSquares.Length; i++)
         {
@@ -402,7 +388,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            prompt.text = "Player 2, place an O";
+            prompt.text = "Player 2 is thinking";
         }
     }
 

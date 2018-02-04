@@ -6,18 +6,30 @@ using UnityEngine.SceneManagement;
 public class GameManager7x7 : MonoBehaviour 
 {
 	public static GameManager7x7 gm;
-	public GameObject XPiece;
-	public GameObject OPiece;
-	public GameObject BPiece;
+	public static Pieces7x7 pc;
+	public static DestroyPowerUp7x7 DPU;
+
+	public Pieces7x7 XPiece;
+	public Pieces7x7 OPiece;
+	public Pieces7x7 BPiece;
+
 	private int currPlayer;
+
 	public GUIText prompt;
+	public GUIText scoreBoard;
+
 	public Square7x7[] aSquares;
 	public Square7x7[,] aGrid;
+
 	private List<Square7x7> aWinOportunities;
 	private List<Square7x7> aBlockOportunities;
+
 	private bool gameOver = false;
+
 	private int moves = 0;
+
 	private IEnumerator coroutine;
+
 	private float rng = 0;
 
 	private short numberOrBlocks = 7;
@@ -25,21 +37,30 @@ public class GameManager7x7 : MonoBehaviour
 	public bool p1Won = false;
 	public bool p2Won = false;
 
-	public GUIText scoreBoard;
 	public static int P1Score = 0;
 	public static int P2Score = 0;
 
+	public bool canDestroy;
 
+	public int numberOfTurnsBeforePowerUp = 0;
+	public int computerNumberOfTurnsBeforePowerUp = 0;
 	// Use this for initialization
 	void Start () 
 	{
 		p1Won = false;
 		p2Won = false;
+		canDestroy = false;
 
 		if (gm == null) 
 		{
 			gm = gameObject.GetComponent<GameManager7x7>();
 		}
+
+		if (DPU == null) 
+		{
+			DPU = gameObject.GetComponent<DestroyPowerUp7x7>();
+		}
+
 		aSquares = FindObjectsOfType(typeof(Square7x7)) as Square7x7[];
 
 		aGrid = new Square7x7[7, 7];
@@ -54,11 +75,10 @@ public class GameManager7x7 : MonoBehaviour
 
 		currPlayer = 3;
 
-		for (short b = 3; b < numberOrBlocks+3; b++) 
+		for (int b = 3; b < numberOrBlocks+3; b++) 
 		{
 			BlockRandomSquares (b);
 			currPlayer++;
-			moves++;
 		}
 
 		currPlayer = 1;
@@ -66,7 +86,7 @@ public class GameManager7x7 : MonoBehaviour
 		ShowScore ();
 	}
 
-	void BlockRandomSquares(short fauxPlayer)
+	void BlockRandomSquares(int fauxPlayer)
 	{
 		currPlayer = fauxPlayer;
 		Square7x7 theSquare;
@@ -89,17 +109,48 @@ public class GameManager7x7 : MonoBehaviour
 		{
 			return;
 		}
-		if (currPlayer == 1) {
+		if (currPlayer == 1) 
+		{
 			PlacePiece (XPiece, other);
+			if (numberOfTurnsBeforePowerUp > 0) 
+			{
+				numberOfTurnsBeforePowerUp--;
+			}
 			if(moves <= 48 && currPlayer != 1 && gameOver == false)
 			{
 				StartCoroutine (ComputerWaitUntilTakingTurn ());
 			}
+		}
+	}
+
+	public void EnablePowerUp()
+	{
+		if (canDestroy == false && currPlayer == 1) {
+			canDestroy = true;
 		} 
-		/*else 
+		else if(canDestroy == true) 
 		{
-			PlacePiece (OPiece, other);
-		}*/
+			canDestroy = false;
+		}
+	}
+
+	public void ResetOwnageAndDialBack(int index)
+	{
+//		Square7x7 theSqaure;
+		for (int i = 0; i < aSquares.Length; i++) 
+		{
+			if (aSquares [i].index == index) 
+			{
+				aSquares [i].player = 0;
+			}
+		}
+		moves--;
+		Debug.Log ("Moving Back one turn, current turn: " + moves);
+		canDestroy = false;
+		numberOfTurnsBeforePowerUp = 3;
+		currPlayer++;
+		ShowPlayerPrompt ();
+		StartCoroutine(ComputerWaitUntilTakingTurn());
 	}
 
 	IEnumerator ComputerWaitUntilTakingTurn()
@@ -114,67 +165,82 @@ public class GameManager7x7 : MonoBehaviour
 		theSquare = NullifyTheSquare();
 
 		rng = Random.value;
-		if (rng >= 0.5f) 
+		if (rng >= 0.2f) 
 		{
 			theSquare = WinOrBlock();
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.15f && computerNumberOfTurnsBeforePowerUp == 0) 
+		{
+			DestroyPiece ();
+			currPlayer = 1;
+			ShowPlayerPrompt ();
+			return;
+		}
+
+		rng = Random.value;
+		if (rng >= 0.2f) 
+		{
+			theSquare = WinOrBlock();
+		}
+
+		rng = Random.value;
+		if (theSquare == null && rng > 0.45f) 
 		{
 			theSquare = CreateOrPreventTrap();
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.45f) 
 		{
 			theSquare = GetCentre();
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.25f) 
 		{
 			theSquare = GetEmptyOuterCorner();
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.35f) 
 		{
 			theSquare = GetEmptyMiddleCorner();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.25f) 
 		{
 			theSquare = GetEmptyInnerCorner();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.25f) 
 		{
 			theSquare = GetEmptyOutsideSidesCenter();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.35f) 
 		{
 			theSquare = GetEmptyMiddleSidesCenter();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.25f) 
 		{
 			theSquare = GetEmptyInnerSides();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.35f) 
 		{
 			theSquare = GetEmptyMiddleSidesSide();	
 		}
 
 		rng = Random.value;
-		if (theSquare == null && rng > 0.5f) 
+		if (theSquare == null && rng > 0.25f) 
 		{
 			theSquare = GetEmptyOutsideSidesSide();	
 		}
@@ -183,7 +249,11 @@ public class GameManager7x7 : MonoBehaviour
 		{
 			theSquare = GetRandomEmptySquare();	
 		}
-
+			
+		if (computerNumberOfTurnsBeforePowerUp > 0) 
+		{
+			computerNumberOfTurnsBeforePowerUp--;
+		}
 
 		PlacePiece (OPiece, theSquare);
 		//return theSquare;
@@ -736,11 +806,13 @@ public class GameManager7x7 : MonoBehaviour
 		return null;
 	}
 
-	void PlacePiece(GameObject piece, Square7x7 other)
+	void PlacePiece(Pieces7x7 piece, Square7x7 other)
 	{
 		moves++;
 
-		Instantiate (piece, other.gameObject.transform.position, Quaternion.identity);
+		Pieces7x7 instantiatedP;
+		instantiatedP = Instantiate (piece, other.gameObject.transform.position, Quaternion.identity);
+		instantiatedP.index = other.index;
 		other.player = currPlayer;
 
 		if (CheckForWin(other))
@@ -761,6 +833,44 @@ public class GameManager7x7 : MonoBehaviour
 			currPlayer = 1;
 		}
 		ShowPlayerPrompt ();
+	}
+
+	void DestroyPiece()
+	{
+		Pieces7x7 pieceToDestroy;
+		Pieces7x7[] aPieces;
+		Square7x7 theSquare;
+		List<Square7x7> Taken = new List<Square7x7>();
+
+		for (int i = 0; i < aSquares.Length; i++)
+		{
+			theSquare = aSquares[i];
+			if (theSquare.player == 1)
+			{
+				Taken.Add(theSquare);
+			}
+			if (theSquare.player > 2) 
+			{
+				Taken.Add (theSquare);
+			}
+		}
+		theSquare = Taken[Random.Range(0, Taken.Count)];
+		Debug.Log ("Chose square on index: " + theSquare.index);
+
+		aPieces = FindObjectsOfType(typeof(Pieces7x7)) as Pieces7x7[];
+
+		for (int i = 0; i < aPieces.Length; i++) 
+		{
+			pieceToDestroy = aPieces [i];
+			if (pieceToDestroy.index == theSquare.index) 
+			{
+				Debug.Log ("Computer Destroying at index: " + pieceToDestroy.index);
+				pieceToDestroy.Destroy3DModel ();
+			}	
+		}
+		moves--;
+		theSquare.player = 0;
+		computerNumberOfTurnsBeforePowerUp = 3;
 	}
 
 	bool CheckForWin(Square7x7 other)
@@ -974,8 +1084,23 @@ public class GameManager7x7 : MonoBehaviour
 			prompt.text = "O gets 3 in a row. Player 2 wins!";
 		}
 
-		yield return new WaitForSeconds(1);
-		SceneManager.LoadScene(2);
+		if (P1Score == 3) {
+			yield return new WaitForSeconds (1);
+			SceneManager.LoadScene ("Map");
+			PlayerPrefs.SetInt ("Tutorial", 1);
+		} 
+		else if (P2Score == 3) 
+		{
+			P1Score = 0;
+			P2Score = 0;
+			yield return new WaitForSeconds(3);
+			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		}
+		else 
+		{
+			yield return new WaitForSeconds(3);
+			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		}
 	}
 
 	void ShowPlayerPrompt()
@@ -995,7 +1120,7 @@ public class GameManager7x7 : MonoBehaviour
 		prompt.text = "Tie! Neither player wins.";
 
 		yield return new WaitForSeconds(1);
-		SceneManager.LoadScene(2);
+		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 	}
 
 

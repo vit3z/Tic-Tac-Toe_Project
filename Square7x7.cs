@@ -7,10 +7,12 @@ public class Square7x7 : MonoBehaviour
 	public int r;
 	public int c;
 	public int player;
+	public static Square7x7 sq;
+	public int index;
 
 	void OnMouseDown()
 	{
-		if (player == 0) 
+		if (player == 0 && GameManager7x7.gm.canDestroy == false && PauseMenu.GameIsPaused == false)
 		{
 			GameManager7x7.gm.ClickSquare(this);	
 		}

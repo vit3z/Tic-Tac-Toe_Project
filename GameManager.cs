@@ -5,31 +5,66 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour 
 {
-
 	public static GameManager gm;                                   //to add the GameManager game object
-    public GameObject XPiece;                                       //to link the X piece
-    public GameObject OPiece;                                       //to link the O piece
+	public static Pieces pc;
+	public static DestroyPowerUp DPU;
+
+	public Pieces XPiece;                                     		//to link the X piece
+	public Pieces OPiece;                                       	//to link the O piece
+
     private int currPlayer;                                         //determins the current player
-    public GUIText prompt;                                          //to link the top-left prompt, which tells which player is to take a turn
+
+	public GUIText prompt;                                          //to link the top-left prompt, which tells which player is to take a turn
+	public GUIText scoreBoard;
+
     public Square [] aSquares;                                      //a grid element
     public Square [,] aGrid;                                        //contains the grid elements
-    //public Square [] Corners;
+
     private List<Square> aWinOportunities;                          //list where the AI will list oportunities to win the match
     private List<Square> aBlockOportunities;                        //list where the AI will list oportunities to block the player
+
     private bool gameOver = false;                                  //on true indicates the current match being over
+
     private int moves = 0;                                          //counts how many turns have been taken
+
     private IEnumerator coroutine;
+
     private float rng = 0;
 
+	public bool p1Won = false;
+	public bool p2Won = false;
+
+	public bool tick = true;
+
+
+	public static int P1Score = 0;
+	public static int P2Score = 0;
+
+	public bool canDestroy;
+
+	public int numberOfTurnsBeforePowerUp = 0;
+	public int computerNumberOfTurnsBeforePowerUp = 0;
 	// Use this for initialization
 	void Start () 
 	{
+		p1Won = false;
+		p2Won = false;
+		tick = true;
+		canDestroy = false;
+
 		if (gm == null) 
 		{
 			gm = gameObject.GetComponent<GameManager>();            //gives "gm" the GameManager component
 		}
+
+		if (DPU == null) 
+		{
+			DPU = gameObject.GetComponent<DestroyPowerUp>();            //gives "gm" the GameManager component
+		}
+
         currPlayer = 1;                                             //makes the human player go first
         ShowPlayerPrompt();
+		ShowScore ();
 
         aSquares = FindObjectsOfType(typeof(Square)) as Square[];   //searches for all the "Square" objects
            
@@ -70,7 +105,10 @@ public class GameManager : MonoBehaviour
         if (currPlayer == 1)
         {
             PlacePiece(XPiece, other);
-
+			if (numberOfTurnsBeforePowerUp > 0) 
+			{
+				numberOfTurnsBeforePowerUp--;
+			}
             if (moves <= 8 && currPlayer != 1 && gameOver == false)
             {
                 StartCoroutine(ComputerWaitUntilTakingTurn());
@@ -78,17 +116,59 @@ public class GameManager : MonoBehaviour
         }
     }
 
+	public void EnablePowerUp()
+	{
+		if (canDestroy == false && currPlayer == 1) {
+			canDestroy = true;
+		} 
+		else if(canDestroy == true) 
+		{
+			canDestroy = false;
+		}
+	}
+
+	public void DisablePowerUp()
+	{
+		if (canDestroy == true) 
+		{
+			Debug.Log ("Going to disable powerup");
+			canDestroy = false;
+		}
+	}
+
+	public void ResetOwnageAndDialBack(int index)
+	{
+//		Square theSqaure;
+		for (int i = 0; i < aSquares.Length; i++) 
+		{
+			if (aSquares [i].index == index) 
+			{
+				aSquares [i].player = 0;
+			}
+		}
+		moves--;
+		Debug.Log ("Moving Back one turn, current turn: " + moves);
+		canDestroy = false;
+		numberOfTurnsBeforePowerUp = 3;
+		currPlayer++;
+		ShowPlayerPrompt ();
+		StartCoroutine(ComputerWaitUntilTakingTurn());
+	}
+
     IEnumerator ComputerWaitUntilTakingTurn()
     {
         yield return new WaitForSeconds(3);
         ComputerTakeATurn();
     }
-	
-    void PlacePiece(GameObject piece, Square other)
+
+	void PlacePiece(Pieces piece, Square other)
     {
         moves++;                                //increments the moves that were made
 
-        Instantiate(piece, other.gameObject.transform.position, Quaternion.identity);           //places the piece on the grid
+		Pieces instantiatedP;
+		instantiatedP = Instantiate(piece, other.gameObject.transform.position, Quaternion.identity);           //places the piece on the grid
+		instantiatedP.index = other.index;
+
         other.player = currPlayer;
 
         if (CheckForWin(other))
@@ -116,49 +196,86 @@ public class GameManager : MonoBehaviour
         return aGrid[r, c].player;
     }
 
+	void DestroyPiece()
+	{
+		Pieces pieceToDestroy;
+		Pieces[] aPieces;
+		Square theSquare;
+		List<Square> Taken = new List<Square>();
+
+		for (int i = 0; i < aSquares.Length; i++)
+		{
+			theSquare = aSquares[i];
+			if (theSquare.player == 1)
+			{
+				Taken.Add(theSquare);
+			}
+		}
+		theSquare = Taken[Random.Range(0, Taken.Count)];
+		Debug.Log ("Chose square on index: " + theSquare.index);
+
+		aPieces = FindObjectsOfType(typeof(Pieces)) as Pieces[];
+
+		for (int i = 0; i < aPieces.Length; i++) 
+		{
+			pieceToDestroy = aPieces [i];
+			if (pieceToDestroy.index == theSquare.index) 
+			{
+				Debug.Log ("Computer Destroying at index: " + pieceToDestroy.index);
+				pieceToDestroy.Destroy3DModel ();
+			}	
+		}
+		moves--;
+		theSquare.player = 0;
+		computerNumberOfTurnsBeforePowerUp = 3;
+	}
+
     void ComputerTakeATurn()        //method by which the AI picks it's "strategy"
     {
         Square theSquare;
         theSquare = NullifyTheSquare();
 
-        rng = Random.value;
-        if (rng > 0.5f)
+		rng = Random.value;
+        if (rng > 0.45f)
         {
             theSquare = WinOrBlock();
         }
 
-        /*if (theSquare == null)
-        {
-            theSquare = Block();
-        }
-        if (theSquare == null)
-        {
-            theSquare = CreateTrap();
-        }
-        if (theSquare == null)
-        {
-            theSquare = PreventTrap();
-        }*/
+		rng = Random.value;
+		if (theSquare == null && rng > 0.51f && computerNumberOfTurnsBeforePowerUp == 0) 
+		{
+			DestroyPiece ();
+			currPlayer = 1;
+			ShowPlayerPrompt ();
+			return;
+		}
+
+		rng = Random.value;
+		if (rng > 0.45f)
+		{
+			theSquare = WinOrBlock();
+		}
+
         rng = Random.value;
-        if (theSquare == null && rng > 0.5f)
+        if (theSquare == null && rng > 0.35f)
         {
             theSquare = CreateOrPreventTrap();
         }
 
         rng = Random.value;
-        if (theSquare == null && rng > 0.5f)
+        if (theSquare == null && rng > 0.25f)
         {
             theSquare = GetCentre();
         }
 
         rng = Random.value;
-        if (theSquare == null && rng > 0.5f)
+        if (theSquare == null && rng > 0.25f)
         {
             theSquare = GetEmptyCorner();
         }
 
         rng = Random.value;
-        if (theSquare == null && rng > 0.5f)
+        if (theSquare == null && rng > 0.35f)
         {
             theSquare = GetEmptySide();
         }
@@ -167,6 +284,11 @@ public class GameManager : MonoBehaviour
         {
             theSquare = GetRandomEmptySquare();
         }
+
+		if (computerNumberOfTurnsBeforePowerUp > 0) 
+		{
+			computerNumberOfTurnsBeforePowerUp--;
+		}
 
         PlacePiece(OPiece, theSquare);
     }
@@ -180,7 +302,6 @@ public class GameManager : MonoBehaviour
     {
         Square theSquare;
         List<Square> aEmptySquares = new List<Square>();
-        //aEmptySquares.Add(aSquares[0]);
 
         for (int i = 0; i < aSquares.Length; i++)
         {
@@ -353,7 +474,7 @@ public class GameManager : MonoBehaviour
         }
         if (p2Corners == 2)
         {
-            return GetEmptySide();
+            return GetEmptyCorner();
         }
         return null;
     }
@@ -380,6 +501,11 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
+	void ShowScore()
+	{
+		scoreBoard.text = "Current Score is: " + P1Score + " : " + P2Score;
+	}
+
     void ShowPlayerPrompt()
     {
         if (currPlayer == 1)
@@ -396,15 +522,37 @@ public class GameManager : MonoBehaviour
     {
         if (currPlayer == 1)
         {
+			P1Score++;
+			Debug.Log ("P1Score = " + P1Score);
+			p1Won = true;
+			Debug.Log ("p1Won = " + p1Won);
             prompt.text = "X gets 3 in a row. Player 1 wins!";
         }
         else
         {
+			P2Score++;
+			Debug.Log ("P2Score = " + P2Score);
+			p2Won = true;
+			Debug.Log ("p2Won = " + p2Won);
             prompt.text = "O gets 3 in a row. Player 2 wins!";
         }
 
-        yield return new WaitForSeconds(3);
-        SceneManager.LoadScene(0);
+		if (P1Score == 3) {
+			yield return new WaitForSeconds (1);
+			SceneManager.LoadScene (SceneManager.GetActiveScene ().buildIndex + 1);
+		} 
+		else if (P2Score == 3) 
+		{
+			P1Score = 0;
+			P2Score = 0;
+			yield return new WaitForSeconds(3);
+			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		}
+		else 
+		{
+			yield return new WaitForSeconds(3);
+			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		}
     }
 
     IEnumerator ShowTiePrompt()
@@ -412,7 +560,7 @@ public class GameManager : MonoBehaviour
         prompt.text = "Tie! Neither player wins.";
 
         yield return new WaitForSeconds(3);
-        SceneManager.LoadScene(0);
+		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
 	// Update is called once per frame
